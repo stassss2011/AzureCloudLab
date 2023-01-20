@@ -32,7 +32,7 @@ else
                     <td><button onclick="@(() => RemoveTodo(item.Id))"><i class="oi oi-trash"></i></button></td>
                     <td>@item.DateCreated</td>
                     <td>@item.Description</td>
-                    <td><input type=checkbox onchange="@(() => ToggleToDo(item.Id))" /> @item.IsComplete</td>
+                    <td><button onclick="@(() => ToggleToDo(item.Id))">@item.IsComplete</button></td>
                 </tr>
             }
         </tbody>
@@ -52,7 +52,7 @@ else
 
 
 @functions{
-    IList<ToDoItem>? _items = new List<ToDoItem>();
+    IList<ToDoItem>? _items = null;
     private string _newItem = String.Empty;
     private bool _loading = false;
 
@@ -96,7 +96,6 @@ else
 
     private async void ToggleToDo(Guid id)
     {
-        //First find the item
         _loading = true;
         StateHasChanged();
         var toDo = _items!.First(x => x.Id == id);
@@ -110,8 +109,8 @@ else
         
         
         await Http.PutAsync(
-            $"api/ToDoItems/{toggeledToDo.Id.ToString()}", 
-            new StringContent(JsonSerializer.Serialize(_newItem), 
+            $"api/ToDoItems/{id.ToString()}", 
+            new StringContent(JsonSerializer.Serialize(toggeledToDo), 
                 Encoding.UTF8, 
                 "application/json"));
         _items = await Http.GetFromJsonAsync<List<ToDoItem>>("api/ToDoItems");
