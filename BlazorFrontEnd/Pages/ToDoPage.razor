@@ -53,7 +53,7 @@ else
     {
         try
         {
-            _items = await Http.GetFromJsonAsync<List<ToDoItem>>("api/todos");
+            _items = await Http.GetFromJsonAsync<List<ToDoItem>>("api/ToDoItems");
         }
         catch (JsonException)
         {

@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CommonLibrary.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Linq;
 
 namespace Api.Controllers
 {
@@ -11,36 +14,50 @@ namespace Api.Controllers
     [ApiController]
     public class ToDoItemController : ControllerBase
     {
-        // GET: api/ToDoItem
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private readonly string CosmosDbConnectionString = "AccountEndpoint=https://cloudlab.documents.azure.com:443/;AccountKey=I8erJBDzkthqZEbswA2B68oyOQdVieWNRie5uOaHxwC1iHOdLPkjExS8TdhvfOEeWBGKjTIRSasHACDbYq1oqQ==;";
+        private readonly string CosmosDbName = "todo-db";
+        private readonly string CosmosDbContainerName = "todo-container";
+        private readonly CosmosClient _client;
+        private readonly Container _container;
+
+        public ToDoItemController()
         {
-            return new string[] { "value1", "value2" };
+            _client = new CosmosClient(CosmosDbConnectionString);
+            _container = _client.GetContainer(CosmosDbName, CosmosDbContainerName);
         }
 
-        // GET: api/ToDoItem/5
-        [HttpGet("{id}", Name = "Get")]
-        public string Get(int id)
+        // GET: api/ToDoItem
+        [HttpGet]
+        public IEnumerable<ToDoItem> Get()
         {
-            return "value";
+            var items = _container.GetItemLinqQueryable<ToDoItem>().ToFeedIterator();
+            var result = new List<ToDoItem>();
+            while (items.HasMoreResults)
+            {
+                result.AddRange(items.ReadNextAsync().Result);
+            }
+            return result;
         }
 
         // POST: api/ToDoItem
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task Post([FromBody] ToDoItem value)
         {
+            await _container.CreateItemAsync(value);
         }
 
         // PUT: api/ToDoItem/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task Put(Guid id, [FromBody] ToDoItem value)
         {
+            await _container.UpsertItemAsync(value);
         }
 
         // DELETE: api/ToDoItem/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task Delete(Guid id)
         {
+           await  _container.DeleteItemAsync<ToDoItem>(id.ToString(), new PartitionKey(id.ToString()));
         }
     }
 }
