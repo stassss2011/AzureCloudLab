@@ -12,6 +12,8 @@
 
 Lab on cloud computing with Azure
 
+[Hosted site](https://salmon-rock-03934c803.2.azurestaticapps.net/)
+
 ## Tech stack
 - .Net 7
 - Blazor WASM
