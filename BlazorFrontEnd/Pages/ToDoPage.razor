@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using CommonLibrary.Models
 @using System.Text.Json
+@using System.Text
 @inject HttpClient Http
 
 <h1>To-Do List</h1>
@@ -40,14 +41,20 @@ else
 
 @if (_items != null)
 {
-    <input placeholder="A new ToDo item" bind="@_newItem" />
+    <input placeholder="A new ToDo item" @bind="@_newItem" onkeydown="@Enter"/>
     <button onclick="@AddTodo">Create</button>
+}
+
+@if (_loading == true)
+{
+    <p><em>Loading...</em></p>
 }
 
 
 @functions{
     IList<ToDoItem>? _items = new List<ToDoItem>();
-    private string _newItem;
+    private string _newItem = String.Empty;
+    private bool _loading = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,30 +68,73 @@ else
         }
     }
 
-    private void AddTodo()
+    private async void AddTodo()
     {
         if (!string.IsNullOrWhiteSpace(_newItem))
         {
-            _items!.Add(new ToDoItem()
+            _loading = true;
+            StateHasChanged();
+            var newTodDo = new ToDoItem
             {
-                DateCreated = DateTime.Now,
+                Id = Guid.NewGuid(),
                 Description = _newItem,
-                Id = Guid.NewGuid()
-            });
+                DateCreated = DateTime.Now,
+                IsComplete = false
+            };
+            await Http.PostAsync(
+                "api/ToDoItems", 
+                new StringContent(JsonSerializer.Serialize(newTodDo), 
+                    Encoding.UTF8, 
+                    "application/json"));
+            _items = await Http.GetFromJsonAsync<List<ToDoItem>>("api/ToDoItems");
 
             _newItem = string.Empty;
+            _loading = false;
+            StateHasChanged();
         }
     }
 
-    private void ToggleToDo(Guid id)
+    private async void ToggleToDo(Guid id)
     {
         //First find the item
-        var todo = _items!.First(x => x.Id == id);
-        todo.IsComplete = !todo.IsComplete;
+        _loading = true;
+        StateHasChanged();
+        var toDo = _items!.First(x => x.Id == id);
+        var toggeledToDo = new ToDoItem
+        {
+            Id = toDo.Id,
+            DateCreated = toDo.DateCreated,
+            Description = toDo.Description,
+            IsComplete = !toDo.IsComplete
+        };
+        
+        
+        await Http.PutAsync(
+            $"api/ToDoItems/{toggeledToDo.Id.ToString()}", 
+            new StringContent(JsonSerializer.Serialize(_newItem), 
+                Encoding.UTF8, 
+                "application/json"));
+        _items = await Http.GetFromJsonAsync<List<ToDoItem>>("api/ToDoItems");
+        _loading = false;
+        StateHasChanged();
+        
     }
 
-    private void RemoveTodo(Guid id)
+    private async void RemoveTodo(Guid id)
     {
-        _items!.Remove(_items.First(x => x.Id == id));
+        _loading = true;
+        StateHasChanged();
+        await Http.DeleteAsync($"api/ToDoItems/{id.ToString()}");
+        _items = await Http.GetFromJsonAsync<List<ToDoItem>>("api/ToDoItems");
+        _loading = false;
+        StateHasChanged();
+    }
+    
+    public void Enter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            AddTodo();
+        }
     }
 }

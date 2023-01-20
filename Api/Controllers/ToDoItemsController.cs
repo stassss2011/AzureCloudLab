@@ -12,7 +12,7 @@ namespace Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ToDoItemController : ControllerBase
+    public class ToDoItemsController : ControllerBase
     {
         private readonly string CosmosDbConnectionString = "AccountEndpoint=https://cloudlab.documents.azure.com:443/;AccountKey=I8erJBDzkthqZEbswA2B68oyOQdVieWNRie5uOaHxwC1iHOdLPkjExS8TdhvfOEeWBGKjTIRSasHACDbYq1oqQ==;";
         private readonly string CosmosDbName = "todo-db";
@@ -20,7 +20,7 @@ namespace Api.Controllers
         private readonly CosmosClient _client;
         private readonly Container _container;
 
-        public ToDoItemController()
+        public ToDoItemsController()
         {
             _client = new CosmosClient(CosmosDbConnectionString);
             _container = _client.GetContainer(CosmosDbName, CosmosDbContainerName);
